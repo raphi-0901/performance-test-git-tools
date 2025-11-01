@@ -4,12 +4,18 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "test": "ts-node src/test.ts",
+    "test": "ts-node src/test.ts"
   },
   "devDependencies": {
+    "@types/fs-extra": "^11.0.4",
     "@types/node": "^24.9.2",
     "ts-node": "^10.9.2",
+    "tsx": "^4.20.6",
     "typescript": "~5.9.3",
     "vite": "^7.1.7"
+  },
+  "dependencies": {
+    "fs-extra": "^11.3.2",
+    "simple-git": "^3.29.0"
   }
 }
