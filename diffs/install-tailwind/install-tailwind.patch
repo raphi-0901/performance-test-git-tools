@@ -1,0 +1,193 @@
+diff --git a/package-lock.json b/package-lock.json
+index 1234db0..63eea7b 100644
+--- a/package-lock.json
++++ b/package-lock.json
+@@ -8,6 +8,7 @@
+       "name": "performance-test-git-tools",
+       "version": "0.0.0",
+       "dependencies": {
++        "dayjs": "^1.11.19",
+         "fs-extra": "^11.3.2",
+         "simple-git": "^3.29.0"
+       },
+@@ -932,6 +933,12 @@
+       "dev": true,
+       "license": "MIT"
+     },
++    "node_modules/dayjs": {
++      "version": "1.11.19",
++      "resolved": "https://registry.npmjs.org/dayjs/-/dayjs-1.11.19.tgz",
++      "integrity": "sha512-t5EcLVS6QPBNqM2z8fakk/NKel+Xzshgt8FFKAn+qwlD1pzZWxh0nVCrvFK7ZDb6XucZeF9z8C7CBWTRIVApAw==",
++      "license": "MIT"
++    },
+     "node_modules/debug": {
+       "version": "4.4.3",
+       "resolved": "https://registry.npmjs.org/debug/-/debug-4.4.3.tgz",
+diff --git a/package.json b/package.json
+index 5a76df6..b5882d5 100644
+--- a/package.json
++++ b/package.json
+@@ -15,6 +15,7 @@
+     "vite": "^7.1.7"
+   },
+   "dependencies": {
++    "dayjs": "^1.11.19",
+     "fs-extra": "^11.3.2",
+     "simple-git": "^3.29.0"
+   }
+diff --git a/src/test.ts b/src/test.ts
+index 39f7f68..bccdc37 100644
+--- a/src/test.ts
++++ b/src/test.ts
+@@ -1,6 +1,9 @@
+ import {createHistoricalCommit} from "./utils/create-historical-commit.js";
++import {initializeGitRepoWithSkeleton} from "./utils/initialize-git-repo-with-skeleton.js";
+ 
+ 
+-await createHistoricalCommit('Test Commit', '2024-01-01 00:00:00 +0000');
++await initializeGitRepoWithSkeleton()
++await createHistoricalCommit('Test Commit');
++await createHistoricalCommit('Second Test Commit');
+ 
+ 
+diff --git a/src/utils/constants.ts b/src/utils/constants.ts
+index 0e02a04..6e8e140 100644
+--- a/src/utils/constants.ts
++++ b/src/utils/constants.ts
+@@ -1,2 +1,8 @@
+-export const TEST_DIR = "test-git-tools";
++import {join} from "path";
++import * as simpleGit from "simple-git";
++
++export const TEST_DIR_NAME = "test-git-tools";
+ export const SKELETON_DIR_NAME = "skeleton";
++export const SKELETON_PATH = join(process.cwd(), SKELETON_DIR_NAME)
++export const TEST_DIR_PATH = join(process.cwd(), TEST_DIR_NAME)
++export const git = simpleGit.simpleGit(TEST_DIR_PATH);
+diff --git a/src/utils/create-historical-commit.ts b/src/utils/create-historical-commit.ts
+index 135b1bd..0f0ac5a 100644
+--- a/src/utils/create-historical-commit.ts
++++ b/src/utils/create-historical-commit.ts
+@@ -1,53 +1,31 @@
+-import * as simpleGit from 'simple-git';
+-import { type SimpleGit } from 'simple-git';
+-import * as fs from 'fs-extra';
+-import { join } from 'path';
+ import { exec } from 'child_process';
+ import { promisify } from 'util';
++import dayjs, { type Dayjs } from 'dayjs';
++import {git, TEST_DIR_PATH} from "./constants.js";
+ 
+ const execPromise = promisify(exec);
+-const TEST_DIR = 'test-git-tools';
+-const REPO_PATH = join(process.cwd(), TEST_DIR);
+ 
+-/**
+- * Erstellt einen Commit mit einem festgelegten Datum in der Vergangenheit.
+- * @param message Die Commit-Nachricht.
+- * @param dateString Datum im Format 'YYYY-MM-DD HH:MM:SS Z'.
+- */
++
+ export async function createHistoricalCommit(
+     message: string,
+-    dateString: string
++    day: Dayjs = dayjs()
+ ) {
++    const formattedDate = day.format('YYYY-MM-DD HH:mm:ss ZZ');
+     const NEW_AUTHOR_NAME = "New Author Name";
+     const NEW_AUTHOR_EMAIL = "new.author@example.com";
+ 
+     const env = {
+         ...process.env,
+-        GIT_COMMITTER_DATE: dateString,
+-        GIT_AUTHOR_DATE: dateString,
++        GIT_COMMITTER_DATE: formattedDate,
++        GIT_AUTHOR_DATE: formattedDate,
+         GIT_AUTHOR_NAME: NEW_AUTHOR_NAME,
+         GIT_AUTHOR_EMAIL: NEW_AUTHOR_EMAIL,
+     };
+ 
+-    // sicherstellen, dass das Repo existiert
+-    if (!(await fs.pathExists(REPO_PATH))) {
+-        await fs.mkdirp(REPO_PATH);
+-        const initGit = simpleGit.simpleGit(REPO_PATH);
+-        await initGit.init();
+-    }
+-
+-    // SimpleGit-Instanz für das Ziel-Repo
+-    const git: SimpleGit = simpleGit.simpleGit(REPO_PATH);
+-
+-    // Commit-Befehl, um Datum zu manipulieren
+     const command = `git commit --allow-empty -m "${message}"`;
+ 
+     // Wir verwenden execPromise, um Env-Variablen korrekt zu übergeben
+-    await execPromise(command, { cwd: REPO_PATH, env });
+-
+-    // Optional: Commit-Log zur Kontrolle
+-    const log = await git.log({ maxCount: 1 });
++    await execPromise(command, { cwd: TEST_DIR_PATH, env });
++    const log = await git.log();
+     console.log(`✅ Commit erstellt: ${log.latest?.hash} — ${log.latest?.date}`);
+-
+-    console.log('simepli :>> ', await git.log());
+ }
+diff --git a/src/utils/initialize-git-repo-with-skeleton.ts b/src/utils/initialize-git-repo-with-skeleton.ts
+index 4978ba6..2164e97 100644
+--- a/src/utils/initialize-git-repo-with-skeleton.ts
++++ b/src/utils/initialize-git-repo-with-skeleton.ts
+@@ -1,14 +1,9 @@
+ import * as simpleGit from 'simple-git';
+-import { type SimpleGit } from 'simple-git';
+ import * as fs from 'fs-extra';
+ import { join } from 'path';
+-import { exec } from 'child_process';
+-import { promisify } from 'util';
+-import {TEST_DIR} from "./constants.js";
+-
+-const execPromise = promisify(exec);
+-const REPO_PATH = join(process.cwd(), TEST_DIR);
+-const SKELETON_DIR_NAME = 'skeleton'; // Angenommen, der "skeleton"-Ordner befindet sich im selben Verzeichnis wie die Ausführung
++import {SKELETON_PATH, TEST_DIR_NAME} from "./constants.js";
++import {createHistoricalCommit} from "./create-historical-commit.js";
++import dayjs from 'dayjs';
+ 
+ /**
+  * Erstellt den Ordner 'test-git-tools', initialisiert darin ein Git-Repository,
+@@ -16,7 +11,7 @@ const SKELETON_DIR_NAME = 'skeleton'; // Angenommen, der "skeleton"-Ordner befin
+  * erstellt einen initialen Commit.
+  */
+ export async function initializeGitRepoWithSkeleton() {
+-    const REPO_PATH = join(process.cwd(), TEST_DIR);
++    const REPO_PATH = join(process.cwd(), TEST_DIR_NAME);
+     await fs.remove(REPO_PATH);
+ 
+     console.log(`Starte Initialisierung in: ${REPO_PATH}`);
+@@ -27,25 +22,11 @@ export async function initializeGitRepoWithSkeleton() {
+     console.log('Initialisiere Git-Repository...');
+     await git.init();
+ 
+-    // 3. Ordner "skeleton" in den neu erstellten Ordner kopieren
+-    const targetSkeletonPath = join(REPO_PATH, SKELETON_DIR_NAME);
+-    console.log(`Kopiere 'skeleton' von ${skeletonPath} nach ${targetSkeletonPath}`);
+-    await fs.copy(skeletonPath, targetSkeletonPath, { overwrite: true });
++    console.log(`Kopiere 'skeleton' von ${SKELETON_PATH} nach ${REPO_PATH}`);
++    await fs.copy(SKELETON_PATH, REPO_PATH, { overwrite: true });
+ 
+-    // 4. Alle kopierten Dateien hinzufügen (stagen)
+-    console.log('Füge alle Dateien hinzu (git add .)...');
+     await git.add('.');
+-
+-    // 5. Initialen Commit erstellen
+-    console.log('Erstelle initialen Commit...');
+-    await git.commit('Initial commit with skeleton structure');
++    await createHistoricalCommit("Initial commit with skeleton structure", dayjs().subtract(1, 'year'))
+ 
+     console.log('Initialisierung abgeschlossen.');
+-    // Optional: Überprüfung
+-    // const status = await git.status();
+-    // console.log('Repository-Status:', status);
+ }
+-
+-// Beispiel für die Verwendung:
+-// initializeGitRepoWithSkeleton()
+-//   .catch(err => console.error('Fehler während der Initialisierung:', err));

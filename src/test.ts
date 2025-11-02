@@ -1,6 +1,9 @@
 import {createHistoricalCommit} from "./utils/create-historical-commit.js";
+import {initializeGitRepoWithSkeleton} from "./utils/initialize-git-repo-with-skeleton.js";
 
 
-await createHistoricalCommit('Test Commit', '2024-01-01 00:00:00 +0000');
+await initializeGitRepoWithSkeleton()
+await createHistoricalCommit('Test Commit');
+await createHistoricalCommit('Second Test Commit');
 
 
