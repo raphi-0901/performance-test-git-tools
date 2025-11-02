@@ -8,8 +8,13 @@ import {git} from "./utils/constants.js";
 await initializeGitRepoWithSkeleton()
 await createHistoricalCommit('Test Commit');
 await createHistoricalCommit('Second Test Commit');
-await applyPatch('install-tailwind')
+await applyPatch('1-install-tailwind')
 await git.add('.')
+await git.reset(['HEAD', 'package-lock.json'])
 await createAutoCommit()
+// await applyPatch('install-color-mode')
+// await git.add('.')
+// await git.reset(['HEAD', 'package-lock.json'])
+// await createAutoCommit()
 
 
