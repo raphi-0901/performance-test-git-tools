@@ -1,0 +1,30 @@
+diff --git a/app/components/Menu.vue b/app/components/Menu.vue
+index 6dbe9dc..614e897 100644
+--- a/app/components/Menu.vue
++++ b/app/components/Menu.vue
+@@ -1,11 +1,24 @@
+ <script setup lang="ts">
+-const menuItems = [
++interface MenuItem {
++  label: string
++  to: string
++}
++
++const defaultItems: MenuItem[] = [
+   { label: 'Home', to: '/' },
+   { label: 'Über uns', to: '/ueber-uns' },
+   { label: 'Services', to: '/services' },
+   { label: 'Kontakt', to: '/kontakt' }
+ ]
+ 
++const props = defineProps({
++  items: {
++    type: Array as PropType<MenuItem[]>,
++    default: () => defaultItems
++  }
++})
++
++const menuItems = computed(() => props.items)
+ const route = useRoute()
+ </script>
+ 

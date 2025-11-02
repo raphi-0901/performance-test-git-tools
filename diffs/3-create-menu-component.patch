@@ -1,0 +1,36 @@
+diff --git a/app/components/Menu.vue b/app/components/Menu.vue
+new file mode 100644
+index 0000000..6dbe9dc
+--- /dev/null
++++ b/app/components/Menu.vue
+@@ -0,0 +1,30 @@
++<script setup lang="ts">
++const menuItems = [
++  { label: 'Home', to: '/' },
++  { label: 'Über uns', to: '/ueber-uns' },
++  { label: 'Services', to: '/services' },
++  { label: 'Kontakt', to: '/kontakt' }
++]
++
++const route = useRoute()
++</script>
++
++<template>
++  <nav class="bg-gray-800 p-4">
++    <ul class="flex space-x-4">
++      <li v-for="item in menuItems" :key="item.to">
++        <NuxtLink
++            :to="item.to"
++            :class="{
++            'px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200': true,
++            'bg-gray-900 text-white': route.path === item.to,
++            'text-gray-300 hover:bg-gray-700 hover:text-white': route.path !== item.to
++          }"
++            aria-current="page"
++        >
++          {{ item.label }}
++        </NuxtLink>
++      </li>
++    </ul>
++  </nav>
++</template>
